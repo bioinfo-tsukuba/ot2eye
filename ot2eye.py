@@ -97,6 +97,14 @@ class OT2Eye():
 				"--save-conf", # 推論結果確率出力
 				"--exist-ok"]) # 検出結果上書き
 
+		#
+		# 同一ラボウェアの検出bboxが被りすぎていたら，確率が高い方のみ残す
+		#
+		print("###########################")
+		print("# remove overlapping bbox #")
+		print("###########################")
+		self.remove_overlapping_bbox(out_dir+sep+DIR_TMP_DETECT_LABWARE+sep+"labels", 0.5)
+		
 
 		#
 		# 訓練用yamlfile読み込み
@@ -144,8 +152,12 @@ class OT2Eye():
 
 
 		#
-		# 同一ラボウェアの検出bboxが近すぎたら，確率が高い方のみ残す
+		# 同一ラボウェアの検出bboxが被りすぎていたら，確率が高い方のみ残す
 		#
+		print("###########################")
+		print("# remove overlapping bbox #")
+		print("###########################")
+		self.remove_overlapping_bbox(out_dir+sep+DIR_TMP_DETECT_TIP+sep+"labels", 0.5)
 
 
 		#
@@ -283,6 +295,52 @@ class OT2Eye():
 			# 統合ラベルファイルclose
 			merge_label_file.close()
 
+
+	#
+	# 重複bboxの削除
+	# 
+	def remove_overlapping_bbox(self, dir_label, threshold):
+		# ラベルファイルループ
+		for label_file_name in os.listdir(dir_label):
+			remove_idx = []
+			label_arr = self.label_file_to_arr(dir_label+sep+label_file_name)
+
+			# 重複ラベルの検出
+			for idx1 in range(len(label_arr)):
+				for idx2 in range(idx1+1, len(label_arr)):
+					box1 = list(map(float, label_arr[idx1]))
+					box2 = list(map(float, label_arr[idx2]))
+
+					overlapping_area  = self.calc_overlapping_area(box1, box2) # 重複部分面積
+					smaller_bbox_area = min(box1[3]*box1[4], box2[3]*box2[4]) # 小さい方のbboxの面積
+
+					if overlapping_area >= threshold * smaller_bbox_area: # 重複部分が大きければ
+						if box1[5] < box2[5]: # 確率が低い方は削除
+							remove_idx.append(idx1)
+						else:
+							remove_idx.append(idx2)
+			
+			# 重複ラベル削除
+			if len(remove_idx) > 0:
+				print(label_file_name)
+				# 重複ラベルを配列から削除
+				for i in remove_idx:
+					del label_arr[i]
+
+				# ラベルファイルの書き換え
+				with open(dir_label+sep+label_file_name, 'w', newline='') as txtfile:
+					writer = csv.writer(txtfile, delimiter=' ')
+					for label in label_arr:
+						writer.writerow(label)
+
+	# bboxの重複部分の面積計算
+	def calc_overlapping_area(self, row1, row2):
+		x1 = max(row1[1] - row1[3] / 2, row2[1] - row2[3] / 2)
+		x2 = min(row1[1] + row1[3] / 2, row2[1] + row2[3] / 2)
+		y1 = max(row1[2] - row1[4] / 2, row2[2] - row2[4] / 2)
+		y2 = min(row1[2] + row1[4] / 2, row2[2] + row2[4] / 2)
+
+		return max(0, x2-x1) * max(0, y2-y1)
 
 
 	#
