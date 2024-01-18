@@ -14,7 +14,7 @@ from scripts.plot import Plot
 
 
 class OT2Eye():
-	def __init__(self, img_dir, out_dir, model_labware, model_tip, threshold, train_yaml, answer_label_file):
+	def __init__(self, img_dir, out_dir, model_labware, model_tip, threshold, train_yaml, answer_label_file, threshold_overlap, threshold_tip):
 		#
 		# argument
 		#
@@ -98,20 +98,20 @@ class OT2Eye():
 				"--exist-ok"]) # 検出結果上書き
 
 		#
-		# 同一ラボウェアの検出bboxが被りすぎていたら，確率が高い方のみ残す
-		#
-		print("###########################")
-		print("# remove overlapping bbox #")
-		print("###########################")
-		self.remove_overlapping_bbox(out_dir+sep+DIR_TMP_DETECT_LABWARE+sep+"labels", 0.5)
-		
-
-		#
 		# 訓練用yamlfile読み込み
 		#
 		with open(train_yaml, 'r') as yamlfile:
 			yaml_arr = yaml.safe_load(yamlfile)
 
+
+		#
+		# 同一ラボウェアの検出bboxが被りすぎていたら，確率が高い方のみ残す
+		#
+		print("###########################")
+		print("# remove overlapping bbox #")
+		print("###########################")
+		self.remove_overlapping_bbox(out_dir+sep+DIR_TMP_DETECT_LABWARE+sep+"labels", threshold_overlap, yaml_arr, TIP_RACK_LABEL_NAME)
+		
 
 		#
 		# 検出結果からトリミング画像生成
@@ -152,12 +152,12 @@ class OT2Eye():
 
 
 		#
-		# 同一ラボウェアの検出bboxが被りすぎていたら，確率が高い方のみ残す
+		# 同一チップの検出bboxが被りすぎていたら，確率が高い方のみ残す
 		#
 		print("###########################")
 		print("# remove overlapping bbox #")
 		print("###########################")
-		self.remove_overlapping_bbox(out_dir+sep+DIR_TMP_DETECT_TIP+sep+"labels", 0.5)
+		self.remove_overlapping_bbox(out_dir+sep+DIR_TMP_DETECT_TIP+sep+"labels", threshold_overlap, yaml_arr, TIP_RACK_LABEL_NAME)
 
 
 		#
@@ -177,13 +177,23 @@ class OT2Eye():
 				out_dir+sep+DIR_TMP_DETECT_TIP+sep+"labels"+sep, # チップラベルディレクトリ
 				yaml_arr, # 学習時yamlデータ配列
 				TIP_RACK_LABEL_NAME, # チップラックのラベル名
-				WIDTH_SMALL, HEIGHT_SMALL) # 縮小後画像サイズ
+				WIDTH_SMALL, HEIGHT_SMALL, # 縮小後画像サイズ
+				threshold_tip) # チップがチップラックの外側にあると判定する面積の割合の閾値
 
 		#結果ラベルコピー
 		shutil.copytree(out_dir+sep+DIR_TMP_DETECT_LABWARE+sep+"labels", out_dir+sep+DIR_OUT_LABWARE_LBL)
 		if len(os.listdir(out_dir+sep+DIR_TMP_IMG_TRIM)) > 0:
 			os.mkdir(out_dir+sep+DIR_OUT_TIP_IMG)
 			shutil.copytree(out_dir+sep+DIR_TMP_DETECT_TIP+sep+"labels", out_dir+sep+DIR_OUT_TIP_LBL)
+
+
+		#
+		# 同一ラボウェアチップの検出bboxが被りすぎていたら，確率が高い方のみ残す
+		#
+		print("###########################")
+		print("# remove overlapping bbox #")
+		print("###########################")
+		self.remove_overlapping_bbox(out_dir+sep+DIR_OUT_MERGED_LBL, threshold_overlap, yaml_arr, TIP_RACK_LABEL_NAME)
 
 
 		#ラボウェア＆チップ検出結果画像静止絵
@@ -195,8 +205,6 @@ class OT2Eye():
 		#チップ検出結果画像生成
 		self.make_bbox_image(out_dir+sep+DIR_TMP_IMG_TRIM, out_dir+sep+DIR_TMP_DETECT_TIP+sep+"labels"+sep,
 				out_dir+sep+DIR_OUT_TIP_IMG, "tip")
-
-
 
 		#
 		# 総合検出結果出力
@@ -226,7 +234,7 @@ class OT2Eye():
 	#
 	# ラボウェア＆チップのラベル統合
 	#
-	def make_merge_label(self, out_dir, dir_labware_lbl, dir_tip_lbl, yaml_arr, TIP_RACK_LABEL_NAME, WIDTH_SMALL, HEIGHT_SMALL):
+	def make_merge_label(self, out_dir, dir_labware_lbl, dir_tip_lbl, yaml_arr, TIP_RACK_LABEL_NAME, WIDTH_SMALL, HEIGHT_SMALL, threshold_tip):
 		TIP_LABEL_NUM  = 0 # チップのラベル番号
 		RACK_LABEL_NUM = 0 # チップラックのラベル番号
 
@@ -265,30 +273,47 @@ class OT2Eye():
 
 							# ラベルファイルの中身の行のループ
 							for i in range(len(tip_label_arr)):
+								# オリジナル座標系におけるチップラックのbbox
 								rack_pos_w  = float(row[1])
 								rack_pos_h  = float(row[2])
 								rack_size_w = float(row[3])
 								rack_size_h = float(row[4])
+								rack_size_w_pre = float(row[3])
+								rack_size_h_pre = float(row[4])
+								# チップラック座標におけるチップのbbox
 								tip_pos_w  = float(tip_label_arr[i][1])
 								tip_pos_h  = float(tip_label_arr[i][2])
 								tip_size_w = float(tip_label_arr[i][3])
 								tip_size_h = float(tip_label_arr[i][4])
 
-								# チップラベルをオリジナル画像の座標系へ変換
-								rack_aspect = (rack_size_h*self.height_original) / float(rack_size_w*self.width_original)
+								# チップラックのトリミングサイズの計算
+								rack_aspect = (rack_size_h_pre*self.height_original) / float(rack_size_w_pre*self.width_original)
 								if rack_aspect <= (HEIGHT_SMALL / float(WIDTH_SMALL)): #横長
-									resize_rate = float(WIDTH_SMALL) / float(self.width_original*rack_size_w)
+									resize_rate = float(WIDTH_SMALL) / float(self.width_original*rack_size_w_pre)
 									rack_size_h = (HEIGHT_SMALL / float(resize_rate)) / float(self.height_original)
 								else:
-									resize_rate = float(HEIGHT_SMALL) / float(self.height_original*rack_size_h)
+									resize_rate = float(HEIGHT_SMALL) / float(self.height_original*rack_size_h_pre)
 									rack_size_w = (WIDTH_SMALL / float(resize_rate)) / float(self.width_original)
-								tip_label_arr[i][0] = str(TIP_LABEL_NUM)
-								tip_label_arr[i][1] = str(round(rack_pos_w-0.5*rack_size_w+tip_pos_w*rack_size_w, 6))
-								tip_label_arr[i][2] = str(round(rack_pos_h-0.5*rack_size_h+tip_pos_h*rack_size_h, 6))
-								tip_label_arr[i][3] = str(round(rack_size_w*tip_size_w, 6))
-								tip_label_arr[i][4] = str(round(rack_size_h*tip_size_h, 6))
-								# チップラベル情報書き込み
-								merge_label_file.write(" ".join(tip_label_arr[i])+"\n")
+								# チップラベルをオリジナル画像の座標系へ変換
+								tip_pos_w_ori  = rack_pos_w-0.5*rack_size_w+tip_pos_w*rack_size_w
+								tip_pos_h_ori  = rack_pos_h-0.5*rack_size_h+tip_pos_h*rack_size_h
+								tip_size_w_ori = rack_size_w*tip_size_w
+								tip_size_h_ori = rack_size_h*tip_size_h
+								# if not ((tip_pos_w_ori+0.5*tip_size_w_ori < rack_pos_w-0.5*rack_size_w_pre) \
+								# 		or (tip_pos_w_ori-0.5*tip_size_w_ori > rack_pos_w+0.5*rack_size_w_pre) \
+								# 		or (tip_pos_h_ori+0.5*tip_size_h_ori < rack_pos_h-0.5*rack_size_h_pre) \
+								# 		or (tip_pos_h_ori-0.5*tip_size_h_ori > rack_pos_h+0.5*rack_size_h_pre)):
+								# チップの内一定割合の面積がチップラックbboxと被っていなければ
+								if self.calc_overlapping_area(list(map(float,row)), \
+										(0,tip_pos_w_ori,tip_pos_h_ori,tip_size_w_ori,tip_size_h_ori)) \
+										> threshold_tip*tip_size_w_ori*tip_size_h_ori:
+									tip_label_arr[i][0] = str(TIP_LABEL_NUM)
+									tip_label_arr[i][1] = str(round(tip_pos_w_ori, 6))
+									tip_label_arr[i][2] = str(round(tip_pos_h_ori, 6))
+									tip_label_arr[i][3] = str(round(tip_size_w_ori, 6))
+									tip_label_arr[i][4] = str(round(tip_size_h_ori, 6))
+									# チップラベル情報書き込み
+									merge_label_file.write(" ".join(tip_label_arr[i])+"\n")
 
 						num_rack += 1
 
@@ -299,7 +324,10 @@ class OT2Eye():
 	#
 	# 重複bboxの削除
 	# 
-	def remove_overlapping_bbox(self, dir_label, threshold):
+	def remove_overlapping_bbox(self, dir_label, threshold, yaml_arr, TIP_RACK_LABEL_NAME):
+		TIP_LABEL_NUM  = yaml_arr["nc"]
+		RACK_LABEL_NUM = yaml_arr["names"].index(TIP_RACK_LABEL_NAME)
+
 		# ラベルファイルループ
 		for label_file_name in os.listdir(dir_label):
 			remove_idx = []
@@ -315,15 +343,23 @@ class OT2Eye():
 					smaller_bbox_area = min(box1[3]*box1[4], box2[3]*box2[4]) # 小さい方のbboxの面積
 
 					if overlapping_area >= threshold * smaller_bbox_area: # 重複部分が大きければ
-						if box1[5] < box2[5]: # 確率が低い方は削除
-							remove_idx.append(idx1)
-						else:
-							remove_idx.append(idx2)
+						if not ((box1[0] == TIP_LABEL_NUM and box2[0] == RACK_LABEL_NUM) or (box1[0] == RACK_LABEL_NUM and box2[0] == TIP_LABEL_NUM)): # チップとチップラックの重複は許容
+							if box1[5] < box2[5]: # 確率が低い方は削除
+								remove_idx.append(idx1)
+							else:
+								remove_idx.append(idx2)
 			
 			# 重複ラベル削除
 			if len(remove_idx) > 0:
-				print(label_file_name)
-				# 重複ラベルを配列から削除
+				# print(label_arr)
+				# print(remove_idx)
+				remove_idx.sort(reverse=True)
+				# for i in range(len(remove_idx)):
+				# 	del label_arr[remove_idx[i]-i]
+				# print(label_arr)
+				# print(label_file_name)
+				# print(len(remove_idx))
+				# # 重複ラベルを配列から削除
 				for i in remove_idx:
 					del label_arr[i]
 
@@ -544,10 +580,10 @@ if __name__ == '__main__':
 			help="file path of labware detection model.")
 	# tip detection model
 	prs.add_argument("--model-tip", type=str, required=False,
-			default="."+sep+"model"+sep+"detect_tip_20220624"+sep+"weights"+sep+"best.pt",
+			default="."+sep+"model"+sep+"exp_20231127+20231026+20220718+20220624_trim"+sep+"weights"+sep+"best.pt",
 			help="file path of labware detection model.")
-	# threshold of detection
-	prs.add_argument("--threshold", type=float, required=False,
+	# threshold of confidence
+	prs.add_argument("--threshold-conf", type=float, required=False,
 			default=0.7,
 			help="confidence threshold of detection. (default: 0.7)")
 	# yaml file of training labware
@@ -557,12 +593,20 @@ if __name__ == '__main__':
 	# evaluation mode
 	prs.add_argument("--evaluate", type=str, required=False, default=None,
 			help="directory path of answer labels file.")
+	# threshold of area for determining that the same object is detected
+	prs.add_argument("--threshold-overlap", type=float, required=False,
+			default=0.5,
+			help="threshold of area for determining that the same object is detected. (default: 0.5)")
+	# threshold for determining tips outside the tiprack
+	prs.add_argument("--threshold-tip", type=float, required=False,
+			default=0.5,
+			help="threshold for determining tips outside the tiprack. (default: 0.5)")
 	args = prs.parse_args()
 
 	#
 	# detection
 	#
-	ot2eye = OT2Eye(args.image_dir, args.out_dir, args.model_labware, args.model_tip, args.threshold, args.labware_train_yaml, args.evaluate)
+	ot2eye = OT2Eye(args.image_dir, args.out_dir, args.model_labware, args.model_tip, args.threshold_conf, args.labware_train_yaml, args.evaluate, args.threshold_overlap, args.threshold_tip)
 
 	#
 	# evaluation mode
