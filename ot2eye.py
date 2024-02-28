@@ -590,9 +590,6 @@ if __name__ == '__main__':
 	prs.add_argument("--labware-train-yaml", type=str, required=False,
 			default="."+sep+"model"+sep+"dataset_labware.yaml",
 			help="yaml file path of training labware.")
-	# evaluation mode
-	prs.add_argument("--evaluate", type=str, required=False, default=None,
-			help="directory path of answer labels file.")
 	# threshold of area for determining that the same object is detected
 	prs.add_argument("--threshold-overlap", type=float, required=False,
 			default=0.5,
@@ -601,6 +598,9 @@ if __name__ == '__main__':
 	prs.add_argument("--threshold-tip", type=float, required=False,
 			default=0.5,
 			help="threshold for determining tips outside the tiprack. (default: 0.5)")
+	# evaluation mode
+	prs.add_argument("--evaluate", type=str, required=False, default=None,
+			help="directory path of answer labels file.")
 	args = prs.parse_args()
 
 	#

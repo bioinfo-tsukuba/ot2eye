@@ -4,7 +4,7 @@
 
 ot2eye is a system that detects labwares such as well plates, tip racks and tips from images taken from the top of the OT-2 Liquid Handling System.
 
-![demo](readme/demo.jpeg)
+![demo](readme/demo.jpg)
 
 
 
@@ -24,14 +24,14 @@ Download the dataset for demonstration. Downloading may take some time.
 
 ~~~~
 $ cd ot2eye/
-$ wget https://zenodo.org/record/7839440/files/example_dataset.zip?download=1
+$ wget https://zenodo.org/records/10720043/files/example_dataset.zip?download=1
 $ unzip example_dataset.zip?download=1
 ~~~~
 
 Execution command.
 
 ~~~~
-$ python3 ot2eye.py dataset/20220718_large/
+$ python3 ot2eye.py dataset/images/
 ~~~~
 
 The generated "out" directory contains label files and images including bounding boxes for the detected labwares.
@@ -50,14 +50,16 @@ $ python3 ot2eye.py <image_dir>
 
 ### Options
 
-| Option               | Explanation                                                  | Default                                       |
-| -------------------- | ------------------------------------------------------------ | --------------------------------------------- |
-| --out-dir            | Directory path of the output files. If a directory with the same name already exists, a sequential number is assigned behind it. | out                                           |
-| --model-labware      | Path of the YOLO model for detecting labwares other than tips. | model/exp_20230622+20230525/weights/best.pt |
-| --model-tip          | Path of the YOLO model for detecting tips.                   | model/detect_tip_20220624/weights/best.pt     |
-| --threshold          | Threshold for class determination. Same as option "conf" in YOLO v5's detect.py. | 0.7                                           |
-| --labware-train-yaml | Path of the yaml file used for training of labware other than tip detection in YOLO. | model/dataset_20230622+20230525.yaml       |
-| --evaluate           | Also executes evaluation mode. Specify the directory path of the ground truth labels. | None                                          |
+| Option               | Explanation                                                  | Default                             |
+| -------------------- | ------------------------------------------------------------ | ----------------------------------- |
+| --out-dir            | Directory path of the output files. If a directory with the same name already exists, a sequential number is assigned behind it. | out                                 |
+| --model-labware      | Path of the YOLO model for detecting labwares other than tips. | model/model_labware/weights/best.pt |
+| --model-tip          | Path of the YOLO model for detecting tips.                   | model/model_tip/weights/best.pt     |
+| --threshold-conf     | Threshold for class determination. Same as option "conf" in YOLO v5's detect.py. | 0.7                                 |
+| --labware-train-yaml | Path of the yaml file used for training of labware other than tip detection in YOLO. | model/dataset_labware.yaml          |
+| --threshold-overlap  | Threshold to prevent the same object from being detected multiple times. If (overlap area with larger object)/(area of smaller object)>threshold, then the object with the higher Confidence score is adopted. | 0.5                                 |
+| --threshold-tip"     | Threshold value for determining a tip outside the tip rack. A tip is determined to be inside a tip rack if (overlap area with tip rack)/(tip area)>threshold. | 0.5                                 |
+| --evaluate           | Also executes evaluation mode. Specify the directory path of the ground truth labels. | None                                |
 
 ### Required files
 
@@ -103,7 +105,7 @@ The current model has been trained using images taken vertically from the top su
 Example training can be downloaded as  follows.
 
 ~~~~
-$ wget https://zenodo.org/record/7839440/files/training_dataset_ver1.zip?download=1
+$ wget https://zenodo.org/records/10720043/files/training_dataset_ver2.zip?download=1
 ~~~~
 
 
@@ -161,13 +163,14 @@ $ python3 ot2eye.py <img_dir> --evaluate <ground truth_labels>
     | demo.jpeg   | well_plate_6  | 1       | 1          | 1        |
     | demo.jpeg   | well_plate_96 | 1       | 1          | 1        |
     | demo.jpeg   | tip_rack      | 1       | 1          | 1        |
+    | demo.jpeg   | deck          | 1       | 1          | 1        |
     | demo.jpeg   | tip           | 1       | 1          | 1        |
   
 * images_evaluation/ (image_files)
   * a ground truth bbox surrounded by a dashed rectangle is added to the detection result image. The label names of the ground truth bboxes other than the tip are displayed in the lower right corner. 
   * The extension is the same as that of the input image.
 
-![demo_evaluation_mode](readme/demo_evaluation_mode.jpeg)
+![demo_evaluation_mode](readme/demo_evaluation_mode.jpg)
 
 
 
