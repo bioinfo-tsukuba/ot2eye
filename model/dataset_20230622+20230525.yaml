@@ -1,6 +1,0 @@
-train: /home/tachibana-k/bioinfo/obj_rec/dataset/20230622+20230525/train/images/
-val: /home/tachibana-k/bioinfo/obj_rec/dataset/20230622+20230525/val/images/
-
-nc: 4
-
-names: ['well_plate_6', 'well_plate_96', 'tip_rack', 'deck']

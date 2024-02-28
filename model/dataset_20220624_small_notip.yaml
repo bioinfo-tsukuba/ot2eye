@@ -1,6 +1,0 @@
-train: ~/ot2eye/dataset/20220624_notip/train/images/
-val: ~/ot2eye/dataset/20220624_notip/val/images/
-
-nc: 3
-
-names: ['well_plate_6', 'well_plate_96', 'tip_rack']

@@ -576,11 +576,11 @@ if __name__ == '__main__':
 			help="directory path of output files.")
 	# labware detection model
 	prs.add_argument("--model-labware", type=str, required=False,
-			default="."+sep+"model"+sep+"exp_20230622+20230525"+sep+"weights"+sep+"best.pt",
+			default="."+sep+"model"+sep+"model_labware"+sep+"weights"+sep+"best.pt",
 			help="file path of labware detection model.")
 	# tip detection model
 	prs.add_argument("--model-tip", type=str, required=False,
-			default="."+sep+"model"+sep+"exp_20231127+20231026+20220718+20220624_trim"+sep+"weights"+sep+"best.pt",
+			default="."+sep+"model"+sep+"model_tip"+sep+"weights"+sep+"best.pt",
 			help="file path of labware detection model.")
 	# threshold of confidence
 	prs.add_argument("--threshold-conf", type=float, required=False,
@@ -588,7 +588,7 @@ if __name__ == '__main__':
 			help="confidence threshold of detection. (default: 0.7)")
 	# yaml file of training labware
 	prs.add_argument("--labware-train-yaml", type=str, required=False,
-			default="."+sep+"model"+sep+"dataset_20230622+20230525.yaml",
+			default="."+sep+"model"+sep+"dataset_labware.yaml",
 			help="yaml file path of training labware.")
 	# evaluation mode
 	prs.add_argument("--evaluate", type=str, required=False, default=None,

@@ -1,6 +1,0 @@
-train: ~/ot2eye/dataset/20230525_small_deck_nodist/train/images/
-val: ~/ot2eye/dataset/20230525_small_deck_nodist/val/images/
-
-nc: 4
-
-names: ['well_plate_6', 'well_plate_96', 'tip_rack', 'deck']

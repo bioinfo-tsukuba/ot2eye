@@ -1,0 +1,6 @@
+train: ~/ot2eye/dataset/dataset_labware/train/images/
+val: ~/ot2eye/dataset/dataset_labware/val/images/
+
+nc: 4
+
+names: ['well_plate_6', 'well_plate_96', 'tip_rack', 'deck']
