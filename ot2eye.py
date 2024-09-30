@@ -105,7 +105,7 @@ class OT2Eye():
 
 
 		#
-		# 同一ラボウェアの検出bboxが被りすぎていたら，確率が高い方のみ残す
+		# ラボウェアの検出bboxが被りすぎていたら，確率が高い方のみ残す
 		#
 		print("###########################")
 		print("# remove overlapping bbox #")
@@ -152,7 +152,7 @@ class OT2Eye():
 
 
 		#
-		# 同一チップの検出bboxが被りすぎていたら，確率が高い方のみ残す
+		# チップの検出bboxが被りすぎていたら，確率が高い方のみ残す
 		#
 		print("###########################")
 		print("# remove overlapping bbox #")
@@ -188,7 +188,7 @@ class OT2Eye():
 
 
 		#
-		# 同一ラボウェアチップの検出bboxが被りすぎていたら，確率が高い方のみ残す
+		# ラボウェアとチップの検出bboxが被りすぎていたら，確率が高い方のみ残す（チップとチップ以外の被りは許容）
 		#
 		print("###########################")
 		print("# remove overlapping bbox #")
@@ -343,7 +343,14 @@ class OT2Eye():
 					smaller_bbox_area = min(box1[3]*box1[4], box2[3]*box2[4]) # 小さい方のbboxの面積
 
 					if overlapping_area >= threshold * smaller_bbox_area: # 重複部分が大きければ
-						if not ((box1[0] == TIP_LABEL_NUM and box2[0] == RACK_LABEL_NUM) or (box1[0] == RACK_LABEL_NUM and box2[0] == TIP_LABEL_NUM)): # チップとチップラックの重複は許容
+						if not ((box1[0] == TIP_LABEL_NUM and box2[0] != TIP_LABEL_NUM) or (box1[0] != TIP_LABEL_NUM and box2[0] == TIP_LABEL_NUM)): # チップとチップ以外の重複は許容
+							print(label_file_name)
+							print(box1[0])
+							print(box2[0])
+							print(overlapping_area)
+							print(smaller_bbox_area)
+							print(smaller_bbox_area*threshold)
+							print("")
 							if box1[5] < box2[5]: # 確率が低い方は削除
 								remove_idx.append(idx1)
 							else:
