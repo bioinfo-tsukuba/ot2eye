@@ -1,5 +1,7 @@
 # ot2eye
 
+[![DOI](https://zenodo.org/badge/559164882.svg)](https://doi.org/10.5281/zenodo.13859339)
+
 ## About ot2eye
 
 ot2eye is a system that detects labwares such as well plates, tip racks and tips from images taken from the top of the OT-2 Liquid Handling System.
