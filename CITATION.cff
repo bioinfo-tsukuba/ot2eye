@@ -1,0 +1,13 @@
+cff-version: 1.0.0
+message: "If you use this software, please cite it as below."
+authors:
+- family-names: "Tachibana"
+  given-names: "Koki"
+  orcid: "https://orcid.org/0009-0009-4915-2711"
+- family-names: "Ozaki"
+  given-names: "Haruka"
+  orcid: "https://orcid.org/0000-0002-1606-2762"
+title: "OT2Eye"
+doi: https://doi.org/10.5281/zenodo.13859339
+date-released: 2024-9-30
+url: "https://github.com/bioinfo-tsukuba/ot2eye"
