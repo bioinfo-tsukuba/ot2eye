@@ -344,13 +344,6 @@ class OT2Eye():
 
 					if overlapping_area >= threshold * smaller_bbox_area: # 重複部分が大きければ
 						if not ((box1[0] == TIP_LABEL_NUM and box2[0] != TIP_LABEL_NUM) or (box1[0] != TIP_LABEL_NUM and box2[0] == TIP_LABEL_NUM)): # チップとチップ以外の重複は許容
-							print(label_file_name)
-							print(box1[0])
-							print(box2[0])
-							print(overlapping_area)
-							print(smaller_bbox_area)
-							print(smaller_bbox_area*threshold)
-							print("")
 							if box1[5] < box2[5]: # 確率が低い方は削除
 								remove_idx.append(idx1)
 							else:
@@ -358,14 +351,7 @@ class OT2Eye():
 			
 			# 重複ラベル削除
 			if len(remove_idx) > 0:
-				# print(label_arr)
-				# print(remove_idx)
 				remove_idx.sort(reverse=True)
-				# for i in range(len(remove_idx)):
-				# 	del label_arr[remove_idx[i]-i]
-				# print(label_arr)
-				# print(label_file_name)
-				# print(len(remove_idx))
 				# # 重複ラベルを配列から削除
 				for i in remove_idx:
 					del label_arr[i]
